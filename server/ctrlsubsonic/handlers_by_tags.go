@@ -252,14 +252,16 @@ func (c *Controller) ServeSearchThree(r *http.Request) *spec.Response {
 	// search albums
 	var albums []*db.Album
 	q = c.dbc.
+		Group("albums.id").
 		Preload("Artists").
 		Preload("Genres").
 		Preload("AlbumStar", "user_id=?", user.ID).
 		Preload("AlbumRating", "user_id=?", user.ID)
 	for _, s := range queries {
-		q = q.Where(`tag_title LIKE ? OR tag_title_u_dec LIKE ?`, s, s)
+		q = q.Where(`albums.tag_title LIKE ? OR albums.tag_title_u_dec LIKE ? OR albums.tag_album_artist LIKE ? OR tracks.tag_track_artist LIKE ? OR tracks.tag_title LIKE ?`, s, s, s, s, s)
 	}
 	q = q.
+		Joins("JOIN tracks ON tracks.album_id=albums.id").
 		Offset(params.GetOrInt("albumOffset", 0)).
 		Limit(params.GetOrInt("albumCount", 20))
 	if m := getMusicFolder(c.musicPaths, params); m != "" {
@@ -282,7 +284,7 @@ func (c *Controller) ServeSearchThree(r *http.Request) *spec.Response {
 		Preload("TrackStar", "user_id=?", user.ID).
 		Preload("TrackRating", "user_id=?", user.ID)
 	for _, s := range queries {
-		q = q.Where(`tracks.tag_title LIKE ? OR tracks.tag_title_u_dec LIKE ?`, s, s)
+		q = q.Where(`tracks.tag_title LIKE ? OR tracks.tag_title_u_dec LIKE ? OR tracks.tag_track_artist LIKE ?`, s, s, s)
 	}
 	q = q.Offset(params.GetOrInt("songOffset", 0)).
 		Limit(params.GetOrInt("songCount", 20))
